@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
 use crate::token::{TokenType, Token};
-use crate::error;
 
 
 pub struct Scanner {
-    source: String,
+    source: Vec<char>,
     tokens: Vec<Token>,
     start: i32,
     current: i32,
@@ -34,7 +33,7 @@ impl Scanner {
         keywords.insert("while".to_string(), TokenType::While);
 
         Scanner {
-            source,
+            source: source.chars().collect(),
             tokens: Vec::new(),
             start: 0,
             current: 0,

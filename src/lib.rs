@@ -4,6 +4,7 @@ use std::process::exit;
 
 pub mod token;
 pub mod scanner;
+pub mod scan;
 
 struct Rox {
     had_error: bool
