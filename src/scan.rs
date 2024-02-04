@@ -1,62 +1,104 @@
-pub struct Scanner {
-    chars: Vec<char>,
-    cursor: usize,
+#[derive(Debug, Clone)]
+pub enum TokenType {
+    LeftParen,
+    RightParen,
+    LeftBrace,
+    RightBrace,
+    Comma,
+    Dot,
+    Minus,
+    Plus,
+    Semicolon,
+    Slash,
+    Star,
+
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+
+    Identifier,
+    String(String),
+    Number(String),
+
+    And,
+    Class,
+    Else,
+    False,
+    Fun,
+    For,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
+
+    Eof,
 }
 
-impl Scanner {
-    pub fn new(string: String) -> Self {
-        Self {
-            chars: string.chars().collect(),
-            cursor: 0,
-        }
-    }
+#[derive(Debug)]
+pub struct Token {
+    pub token_type: TokenType,
+    pub location: Location,
+}
 
-    pub fn cursor(&self) -> usize {
-        self.cursor
-    }
+#[derive(Copy, Clone, Default, Debug)]
+pub struct Location {
+    pub line: usize,
+    pub column: usize,
+}
 
-    pub fn peek(&self) -> Option<&char> {
-        self.chars.get(self.cursor)
-    }
-
-    pub fn is_at_end(&self) -> bool {
-        self.cursor == self.chars.len()
-    }
-
-    pub fn pop(&mut self) -> Option<&char> {
-        match self.chars.get(self.cursor) {
-            Some(c) => {
-                self.cursor += 1;
-                Some(c)
+pub fn scan_tokens(input: String) -> Vec<Token> {
+    let mut char_indices = input.char_indices().peekable();
+    let mut output = Vec::new();
+    let mut line: usize = 0;
+    while let Some((position, ch)) = char_indices.next() {
+        let token_type = match ch {
+            '(' => Some(TokenType::LeftParen),
+            ')' => Some(TokenType::RightParen),
+            '{' => Some(TokenType::LeftBrace),
+            '}' => Some(TokenType::RightBrace),
+            ',' => Some(TokenType::Comma),
+            '.' => Some(TokenType::Dot),
+            '-' => Some(TokenType::Minus),
+            '+' => Some(TokenType::Plus),
+            ';' => Some(TokenType::Semicolon),
+            '*' => Some(TokenType::Star),
+            '!' => match char_indices.next_if_eq(&(position + 1, '=')) {Some(_) => Some(TokenType::BangEqual), None => Some(TokenType::Bang)},
+            '=' => match char_indices.next_if_eq(&(position + 1, '=')) {Some(_) => Some(TokenType::EqualEqual), None => Some(TokenType::Equal)},
+            '<' => match char_indices.next_if_eq(&(position + 1, '=')) {Some(_) => Some(TokenType::LessEqual), None => Some(TokenType::Less)},
+            '>' => match char_indices.next_if_eq(&(position + 1, '=')) {Some(_) => Some(TokenType::GreaterEqual), None => Some(TokenType::Greater)},
+            '/' => match char_indices.next_if_eq(&(position + 1, '/')) {
+                Some(_) => {char_indices.take_while(|(_, c)| *c != '\n'); None},
+                None => Some(TokenType::Slash),
             },
-            None => None,
-        }
-    }
-
-    pub fn match_char(&mut self, target: &char) -> bool {
-        match self.chars.get(self.cursor) {
-            Some(c) => {
-                match target == c {
-                    true => { self.cursor += 1; return true},
-                    false => return false,
+            ' ' | '\r' | '\t' => None,
+            '\n' => {line += 1; None},
+            '"' => {
+                let mut last_matched: char = '\0';
+                let s: String = char_indices.by_ref().take_while(|(_, c)| {last_matched = *c; *c !='"'}).map(|(_, c)| {c}).collect();
+                match last_matched {
+                    '"' => Some(TokenType::String(s)),
+                    '\n' => {
+                        line += 1;
+                        Some(TokenType::String(s))
+                    },
+                    _ => panic!()
                 }
             },
-            None => false,
-        }
+            ch if ch.is_digit(10) => Some(TokenType::Number("42".to_string())),
+            ch if ch.is_alphabetic() => Some(TokenType::Identifier),
+            _ => panic!(),
+        };
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_scanner_routine() {
-        let mut scanner = Scanner::new("test".to_string());
-
-        assert_eq!(scanner.cursor(), 0);
-        assert_eq!(scanner.peek(), Some(&'t'));
-        assert_eq!(scanner.pop(), Some(&'t'));
-        assert_eq!(scanner.is_at_end(), false);
-    }
+    output
 }
