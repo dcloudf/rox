@@ -23,7 +23,7 @@ pub enum TokenType {
 
     Identifier,
     String(String),
-    Number(String),
+    Number(f32),
 
     And,
     Class,
@@ -73,29 +73,60 @@ pub fn scan_tokens(input: String) -> Vec<Token> {
             '+' => Some(TokenType::Plus),
             ';' => Some(TokenType::Semicolon),
             '*' => Some(TokenType::Star),
-            '!' => match char_indices.next_if_eq(&(position + 1, '=')) {Some(_) => Some(TokenType::BangEqual), None => Some(TokenType::Bang)},
-            '=' => match char_indices.next_if_eq(&(position + 1, '=')) {Some(_) => Some(TokenType::EqualEqual), None => Some(TokenType::Equal)},
-            '<' => match char_indices.next_if_eq(&(position + 1, '=')) {Some(_) => Some(TokenType::LessEqual), None => Some(TokenType::Less)},
-            '>' => match char_indices.next_if_eq(&(position + 1, '=')) {Some(_) => Some(TokenType::GreaterEqual), None => Some(TokenType::Greater)},
+            '!' => match char_indices.next_if_eq(&(position + 1, '=')) {
+                Some(_) => Some(TokenType::BangEqual),
+                None => Some(TokenType::Bang),
+            },
+            '=' => match char_indices.next_if_eq(&(position + 1, '=')) {
+                Some(_) => Some(TokenType::EqualEqual),
+                None => Some(TokenType::Equal),
+            },
+            '<' => match char_indices.next_if_eq(&(position + 1, '=')) {
+                Some(_) => Some(TokenType::LessEqual),
+                None => Some(TokenType::Less),
+            },
+            '>' => match char_indices.next_if_eq(&(position + 1, '=')) {
+                Some(_) => Some(TokenType::GreaterEqual),
+                None => Some(TokenType::Greater),
+            },
             '/' => match char_indices.next_if_eq(&(position + 1, '/')) {
-                Some(_) => {char_indices.take_while(|(_, c)| *c != '\n'); None},
+                Some(_) => {
+                    char_indices.take_while(|(_, c)| *c != '\n');
+                    None
+                }
                 None => Some(TokenType::Slash),
             },
             ' ' | '\r' | '\t' => None,
-            '\n' => {line += 1; None},
+            '\n' => {
+                line += 1;
+                None
+            }
             '"' => {
                 let mut last_matched: char = '\0';
-                let s: String = char_indices.by_ref().take_while(|(_, c)| {last_matched = *c; *c !='"'}).map(|(_, c)| {c}).collect();
+                let s: String = char_indices
+                    .by_ref()
+                    .take_while(|(_, c)| {
+                        last_matched = *c;
+                        *c != '"'
+                    })
+                    .map(|(_, c)| c)
+                    .collect();
                 match last_matched {
                     '"' => Some(TokenType::String(s)),
                     '\n' => {
                         line += 1;
                         Some(TokenType::String(s))
-                    },
-                    _ => panic!()
+                    }
+                    _ => panic!(),
                 }
+            }
+            ch if ch.is_digit(10) => {
+                Some(
+                    TokenType::Number(
+                        char_indices.by_ref().take_while(|(_, c)| (*c).is_digit(10)).map(|(_, c)| c).collect::<String>().parse::<f32>().unwrap()
+                    )
+                )
             },
-            ch if ch.is_digit(10) => Some(TokenType::Number("42".to_string())),
             ch if ch.is_alphabetic() => Some(TokenType::Identifier),
             _ => panic!(),
         };
